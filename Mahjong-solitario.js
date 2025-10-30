@@ -6,47 +6,64 @@
 // ========== CÓDIGO MAHJONG SOLITARIO ==========
 // ===================================
 
-const widget = await createWidget();
-if (config.runsInWidget) {
-  Script.setWidget(widget);
-  Script.complete();
-} else {
-  // Ejecuta el juego si no está en modo widget
-  await startGame();
-}
+const WIDGET_BACKGROUND_COLOR = new Color("#1C3668");
+const TILE_COLOR_FACE = new Color("#FFFFFF");
+const TILE_COLOR_STROKE = new Color("#000000");
+const TILE_COLOR_CHAR = new Color("#D32F2F");
 
-// --- FUNCIONES DE INICIO DE SCRIPTABLE ---
-
+/**
+ * Crea el widget de Scriptable con una vista previa y enlace de ejecución.
+ * @returns {ListWidget} El widget configurado.
+ */
 async function createWidget() {
   const w = new ListWidget();
-  w.backgroundColor = new Color("#1C3668"); 
+  w.backgroundColor = WIDGET_BACKGROUND_COLOR; 
+
+  // 1. Título
   const title = w.addText("🀄 Mahjong Solitario");
-  title.textColor = new Color("#FFFFFF");
+  title.textColor = Color.white();
   title.font = Font.boldSystemFont(18);
   title.centerAlignText();
+  
+  // 2. Dibujar la vista previa de la ficha
   const canvas = new DrawContext();
-  canvas.size = new Size(300, 150);
+  const canvasSize = new Size(300, 150);
+  canvas.size = canvasSize;
   canvas.opaque = false;
   canvas.respectScreenScale = true;
-  canvas.setFillColor(new Color("#1C3668"));
-  canvas.fillRect(new Rect(0, 0, 300, 150));
+
+  // Fondo de la vista previa
+  canvas.setFillColor(WIDGET_BACKGROUND_COLOR);
+  canvas.fillRect(new Rect(0, 0, canvasSize.width, canvasSize.height));
+
+  // Dibujo de la ficha de muestra
   const tileRect = new Rect(130, 50, 40, 50);
-  canvas.setFillColor(new Color("#FFFFFF"));
+  
+  canvas.setFillColor(TILE_COLOR_FACE);
   canvas.fillRect(tileRect); 
-  canvas.setStrokeColor(new Color("#000000"));
+  canvas.setStrokeColor(TILE_COLOR_STROKE);
   canvas.setLineWidth(2);
   canvas.strokeRect(tileRect);
+  
+  // Carácter de la ficha
   canvas.setLineWidth(1); 
   canvas.setFont(Font.systemFont(30)); 
-  canvas.setTextColor(new Color("#D32F2F")); 
+  canvas.setTextColor(TILE_COLOR_CHAR); 
   canvas.drawText("🀄", new Point(132, 55)); 
+  
   const gamePreview = canvas.getImage();
   const img = w.addImage(gamePreview);
   img.centerAlignImage();
+  
+  // 3. Configurar URL para ejecutar el script
   w.url = URLScheme.forRunningScript();
+  
   return w;
 }
 
+/**
+ * Ejecuta el juego en una WebView.
+ */
 async function startGame() {
   const webView = new WebView();
   const html = getMahjongHtml(); 
@@ -54,9 +71,29 @@ async function startGame() {
   await webView.present();
 }
 
+// ===================================
+// ========== LÓGICA DE EJECUCIÓN ==========
+// ===================================
+
+const widget = await createWidget();
+
+if (config.runsInWidget) {
+  Script.setWidget(widget);
+} else {
+  // Ejecuta el juego si no está en modo widget (o al tocarlo)
+  await startGame();
+}
+
+Script.complete(); // Siempre llamar a complete, incluso si se usa setWidget
+
 // --- CÓDIGO HTML/JS DEL JUEGO ---
 
+/**
+ * Genera la estructura HTML y el código JavaScript del juego.
+ * @returns {string} Código HTML completo.
+ */
 function getMahjongHtml() {
+  // Se usa un template literal para evitar concatenaciones complejas.
   return `
   <!DOCTYPE html>
   <html>
@@ -85,7 +122,6 @@ function getMahjongHtml() {
         box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4); 
       }
       
-      /* ESTILOS DE UI SUPERIOR (CENTRADO Y MÁS CERCANO AL CANVAS) */
       #uiContainer {
           display: flex;
           gap: 20px;
@@ -168,6 +204,7 @@ function getMahjongHtml() {
       </div>
     </div>
     <script>
+      // Uso de 'const' para todas las referencias DOM.
       const canvas = document.getElementById('gameCanvas');
       const ctx = canvas.getContext('2d');
       const gameOverScreen = document.getElementById('gameOverScreen');
@@ -181,7 +218,7 @@ function getMahjongHtml() {
       let board = [];
       let selectedTiles = [];
       let gameOver = false;
-      let gameInterval = null;
+      let gameInterval = null; // Se inicializa como null
       let pairsRemoved = 0; 
       const TOTAL_TILES = 144; 
 
@@ -219,13 +256,16 @@ function getMahjongHtml() {
         'S1': { char: '🀦', color: '#000' }, 'S2': { char: '🀧', color: '#000' }, 'S3': { char: '🀨', color: '#000' }, 'S4': { char: '🀩', color: '#000' },
       };
       
+      const SPECIAL_TILES_KEYS = ['F1','F2','F3','F4','S1','S2','S3','S4'];
+
       const TILE_TYPES = Object.keys(TILE_MAP)
-          .filter(key => key.length > 1 && !['F1','F2','F3','F4','S1','S2','S3','S4'].includes(key)) 
+          .filter(key => key.length > 1 && !SPECIAL_TILES_KEYS.includes(key)) 
           .flatMap(type => Array(4).fill(type));
 
-      const SPECIAL_TILES = ['F1', 'F2', 'F3', 'F4', 'S1', 'S2', 'S3', 'S4'];
-      TILE_TYPES.push(...SPECIAL_TILES); 
+      TILE_TYPES.push(...SPECIAL_TILES_KEYS); 
 
+      // Extensión de prototipo de Canvas: Mejor usar una función separada o reescribir para evitar mutar el prototipo global, 
+      // pero se mantiene para no romper la compatibilidad con el código original.
       CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
         if (w < 2 * r) r = w / 2;
         if (h < 2 * r) r = h / 2;
@@ -260,19 +300,25 @@ function getMahjongHtml() {
             [22,8,0],[22,10,0],[22,14,0],[24,0,0],[24,6,0],[24,8,0],[24,14,0],[25,7,1],[26,7,2]
           ];
 
-          let positions = coordList.map(c => ({ x: c[0], y: c[1], z: c[2] }));
-          let orderedPositions = positions.sort((a, b) => b.z - a.z);
+          // Uso de 'map' y 'sort' en una sola cadena para crear y ordenar posiciones.
+          const positions = coordList.map(c => ({ x: c[0], y: c[1], z: c[2] }))
+                                     .sort((a, b) => b.z - a.z);
           
-          return orderedPositions; 
+          return positions; 
       }
       
       // --- FUNCIONES DE UTILIDAD ---
       
+      /**
+       * Calcula la cantidad de pares que se pueden remover del tablero.
+       * @returns {number} Número de movimientos posibles.
+       */
       function getPossibleMovesCount() {
-          const remainingTiles = board.filter(t => !t.removed);
-          const freeTiles = remainingTiles.filter(t => t.isFree);
+          // Simplificación: solo se filtran las libres y no removidas en una variable
+          const freeTiles = board.filter(t => !t.removed && t.isFree);
           let possibleMoves = 0;
           
+          // Se utiliza un bucle anidado eficiente para la comparación de pares
           for (let i = 0; i < freeTiles.length; i++) {
               for (let j = i + 1; j < freeTiles.length; j++) {
                   if (areTilesMatching(freeTiles[i], freeTiles[j])) {
@@ -285,19 +331,20 @@ function getMahjongHtml() {
 
       function updateMoveCounter() {
           const possibleMoves = getPossibleMovesCount();
-          moveCounter.textContent = 'Movimientos Posibles: ' + possibleMoves;
+          // Uso de template literal para la actualización del texto
+          moveCounter.textContent = \`Movimientos Posibles: \${possibleMoves}\`;
           return possibleMoves;
       }
 
       function shuffleArray(array) {
           for (let i = array.length - 1; i > 0; i--) {
               const j = Math.floor(Math.random() * (i + 1));
-              [array[i], array[j]] = [array[j], array[i]];
+              [array[i], array[j]] = [array[j], array[i]]; // Destructuring swap
           }
       }
 
       /**
-       * Función para barajar las fichas restantes.
+       * Baraja las fichas restantes en el tablero.
        */
       function shuffleBoardAndContinue() {
           const remainingTiles = board.filter(t => !t.removed);
@@ -305,28 +352,33 @@ function getMahjongHtml() {
           if (remainingTiles.length === 0) return; 
 
           let remainingTypes = remainingTiles.map(t => t.type);
-          
           shuffleArray(remainingTypes);
           
-          for (let i = 0; i < remainingTiles.length; i++) {
-              remainingTiles[i].type = remainingTypes[i];
-              remainingTiles[i].isFlowerOrSeason = SPECIAL_TILES.includes(remainingTypes[i]);
-          }
+          // Uso de 'forEach' más limpio
+          remainingTiles.forEach((tile, i) => {
+              tile.type = remainingTypes[i];
+              tile.isFlowerOrSeason = SPECIAL_TILES_KEYS.includes(remainingTypes[i]);
+          });
           
+          // Resetear el estado de selección y libertad
+          selectedTiles.forEach(t => t.isSelected = false);
           selectedTiles = [];
-          remainingTiles.forEach(t => t.isSelected = false);
           updateTileFreedom();
-          gameOver = false;
-          gameOverScreen.style.display = 'none';
 
-          if (!gameInterval) {
-             gameInterval = setInterval(gameLoop, 1000 / 30);
+          // Reiniciar el juego si estaba en Game Over
+          if (gameOver) {
+              gameOver = false;
+              gameOverScreen.style.display = 'none';
+              if (!gameInterval) {
+                 gameInterval = setInterval(gameLoop, 1000 / 30);
+              }
           }
+          updateMoveCounter(); 
       }
 
 
       /**
-       * Inicializa el tablero.
+       * Inicializa el tablero y los estados del juego.
        */
       function initializeGame() {
           const positions = generateExactLayoutPositions();
@@ -338,30 +390,24 @@ function getMahjongHtml() {
           
           shuffleArray(tileTypes);
           
-          board = [];
-          for (let i = 0; i < positions.length; i++) {
-              board.push({
-                  id: i,
-                  type: tileTypes[i],
-                  x: positions[i].x,
-                  y: positions[i].y,
-                  z: positions[i].z,
-                  removed: false,
-                  isFree: false,
-                  isSelected: false,
-                  isFlowerOrSeason: SPECIAL_TILES.includes(tileTypes[i]) 
-              });
-          }
+          // Crear las fichas usando 'map'
+          board = positions.map((pos, i) => ({
+              id: i,
+              type: tileTypes[i],
+              x: pos.x,
+              y: pos.y,
+              z: pos.z,
+              removed: false,
+              isFree: false, // Se recalcula después
+              isSelected: false,
+              isFlowerOrSeason: SPECIAL_TILES_KEYS.includes(tileTypes[i]) 
+          }));
           
           selectedTiles = [];
           gameOver = false;
           pairsRemoved = 0; 
-          updateTileFreedom(); 
-          updateMoveCounter(); 
-          gameOverScreen.style.display = 'none';
-
-          // 📐 CÁLCULOS DE CENTRADO 📐
           
+          // CÁLCULOS DE CENTRADO (Mantenidos)
           const max_x = 28; 
           const max_y = 14; 
           const max_z = 4;
@@ -377,15 +423,23 @@ function getMahjongHtml() {
           const offsetToCenterVertical = centerUnitY * TILE_UNIT_Y * TILE_SCALE;
           LAYOUT_START_Y = (canvas.height / 2) - offsetToCenterVertical;
 
+          // Inicio de bucle y comprobación de movimientos
+          updateTileFreedom(); 
+          updateMoveCounter(); 
+          gameOverScreen.style.display = 'none';
 
           if (gameInterval) clearInterval(gameInterval);
           gameInterval = setInterval(gameLoop, 1000 / 30);
       }
 
-      // --- FUNCIONES DE JUEGO (Mahjong Clásico: desplazamiento de media ficha) ---
+      // --- FUNCIONES DE JUEGO ---
 
+      /**
+       * Comprueba si dos fichas coinciden (igual tipo o ambas son Especiales).
+       */
       function areTilesMatching(tile1, tile2) {
           if (tile1.id === tile2.id) return false;
+          // Las fichas especiales (Flores/Estaciones) coinciden entre sí
           if (tile1.isFlowerOrSeason && tile2.isFlowerOrSeason) {
               return true; 
           }
@@ -401,25 +455,25 @@ function getMahjongHtml() {
           // 1. ¿Está cubierta? (Chequeo de superposición)
           const isCovered = board.some(t => 
               !t.removed && t.z === z + 1 &&
-              t.x <= x + 1 && t.x >= x - 1 &&
-              t.y <= y + 1 && t.y >= y - 1
+              t.x >= x - 1 && t.x <= x + 1 && // Rango en X (x-1, x, x+1)
+              t.y >= y - 1 && t.y <= y + 1   // Rango en Y (y-1, y, y+1)
           );
           
           if (isCovered) {
               return false;
           }
           
-          // CASO ESPECIAL 1: Cúspide
+          // CASO ESPECIAL 1: Cúspide (la capa más alta)
           if (z === 4) return true; 
 
-
-          // CASO ESPECIAL 2: Extremos Absolutos (Cola y Cabeza)
-          // Si no están cubiertas, siempre están libres porque el borde exterior siempre está libre.
+          // CASO ESPECIAL 2: Extremos Absolutos
+          // Los extremos (x=0 y x=28) están libres si no están cubiertos.
           if (x === 0 || x === 28) { 
               return true; 
           } 
 
           // 2. Chequeo de lateralidad para TODAS las demás fichas
+          // Chequea si hay una ficha en el mismo nivel, 2 unidades a la izquierda o derecha.
           const hasTileLeft = board.some(t => 
               !t.removed && t.x === x - 2 && t.y === y && t.z === z
           );
@@ -427,16 +481,19 @@ function getMahjongHtml() {
               !t.removed && t.x === x + 2 && t.y === y && t.z === z
           );
           
-          // Ficha normal (incluye x=2, x=26, y todas las del medio)
-          // Es libre si NO está bloqueada por AMBOS lados.
+          // Una ficha es libre si no está bloqueada por AMBOS lados.
           return !hasTileLeft || !hasTileRight;
       }
 
 
       function updateTileFreedom() {
+          // Uso de 'forEach'
           board.forEach(tile => {
               if (!tile.removed) {
                   tile.isFree = checkTileFreedom(tile);
+              } else {
+                  // Limpieza: asegura que una ficha removida no esté marcada como libre.
+                  tile.isFree = false; 
               }
           });
       }
@@ -446,13 +503,11 @@ function getMahjongHtml() {
           const map = TILE_MAP[tile.type];
           if (!map) return;
           
-          let base_x = LAYOUT_START_X + tile.x * TILE_UNIT_X * TILE_SCALE;
-          let base_y = LAYOUT_START_Y + tile.y * TILE_UNIT_Y * TILE_SCALE;
-          
+          // Calcular posición de dibujo (mantenida la lógica original)
           const z_offset_x = tile.z * TILE_DEPTH_X;
           const z_offset_y = tile.z * TILE_DEPTH_Y;
-          let drawX = base_x + z_offset_x;
-          let drawY = base_y - z_offset_y;
+          let drawX = LAYOUT_START_X + tile.x * TILE_UNIT_X * TILE_SCALE + z_offset_x;
+          let drawY = LAYOUT_START_Y + tile.y * TILE_UNIT_Y * TILE_SCALE - z_offset_y;
 
           // Animación de elevación para fichas seleccionadas
           if (tile.isSelected) {
@@ -462,34 +517,35 @@ function getMahjongHtml() {
           const W = TILE_WIDTH;
           const H = TILE_HEIGHT;
           const R = TILE_RADIUS;
-          const D = TILE_DEPTH_X; 
-          ctx.strokeStyle = '#000';
-          ctx.lineWidth = 1;
+          const D = TILE_DEPTH_X; // Usado para la profundidad del 3D
+          
           const isFree = tile.isFree;
           const isSelected = tile.isSelected;
           const fillColor = isSelected ? '#FFD700' : (isFree ? '#FFFFFF' : '#D0D0D0');
           const sideColor = isSelected ? '#CCAA00' : (isFree ? '#E0E0E0' : '#B0B0B0');
           
-          // Sombra de la ficha
+          // --- Sombra ---
           ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
           ctx.shadowBlur = 5;
           ctx.shadowOffsetX = 3;
           ctx.shadowOffsetY = 3;
 
-          // Lados 3D
+          // --- Lados 3D (Refactorizado ligeramente para ser más claro) ---
           ctx.fillStyle = sideColor;
+          
+          // Lado derecho
           ctx.fillRect(drawX + W, drawY + D, D, H - D); 
           ctx.beginPath();
           ctx.moveTo(drawX + W, drawY + H);
           ctx.lineTo(drawX + W + D, drawY + H - D);
-          ctx.lineTo(drawX + W + D, drawY + H + D - D); 
+          ctx.lineTo(drawX + W + D, drawY + H); 
           ctx.lineTo(drawX + W, drawY + H);
           ctx.closePath();
           ctx.fill();
 
+          // Lado superior
           ctx.fillStyle = sideColor;
           ctx.fillRect(drawX + R, drawY - D, W - R, D); 
-          
           ctx.beginPath();
           ctx.moveTo(drawX + W, drawY);
           ctx.lineTo(drawX + W + D, drawY - D);
@@ -497,23 +553,28 @@ function getMahjongHtml() {
           ctx.closePath();
           ctx.fill();
           
-          // Desactivar sombra para la cara principal y el texto
-          ctx.shadowColor = 'rgba(0, 0, 0, 0)'; 
+          // --- Cara principal ---
+          ctx.shadowColor = 'rgba(0, 0, 0, 0)'; // Desactivar sombra para la cara principal y el texto
+          ctx.lineWidth = 2; // Ancho del borde de la cara
 
-          // Cara principal
+          // Relleno
           ctx.fillStyle = fillColor;
           ctx.roundRect(drawX, drawY, W, H, R).fill();
-          ctx.lineWidth = 2;
+          
+          // Borde
+          ctx.strokeStyle = '#000';
           ctx.roundRect(drawX, drawY, W, H, R).stroke();
 
-          // Carácter UNICODE
+
+          // --- Carácter UNICODE ---
           ctx.fillStyle = map.color;
-          ctx.font = 'bold ' + FONT_SIZE + ' Arial';
+          // Uso de template literal para la fuente
+          ctx.font = \`bold \${FONT_SIZE} Arial\`; 
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(map.char, drawX + W / 2, drawY + H / 2 + 5); 
           
-          // Marcar Ficha Libre
+          // --- Marcar Ficha Libre (Borde verde) ---
           if(isFree) {
               ctx.strokeStyle = '#388E3C'; 
               ctx.lineWidth = 3;
@@ -523,9 +584,11 @@ function getMahjongHtml() {
       
       function handleTileSelection(tile) {
           if (tile.isSelected) {
+              // Deseleccionar
               tile.isSelected = false;
               selectedTiles = selectedTiles.filter(t => t.id !== tile.id);
           } else if (selectedTiles.length < 2) {
+              // Seleccionar
               tile.isSelected = true;
               selectedTiles.push(tile);
           }
@@ -534,6 +597,7 @@ function getMahjongHtml() {
               const [tile1, tile2] = selectedTiles;
               
               if (areTilesMatching(tile1, tile2)) {
+                  // Coincidencia exitosa
                   tile1.removed = true;
                   tile2.removed = true;
                   selectedTiles.forEach(t => t.isSelected = false);
@@ -543,6 +607,7 @@ function getMahjongHtml() {
                   updateMoveCounter(); 
                   
               } else {
+                  // No hay coincidencia: deseleccionar después de un retraso
                   setTimeout(() => {
                       tile1.isSelected = false;
                       tile2.isSelected = false;
@@ -554,6 +619,8 @@ function getMahjongHtml() {
       
       canvas.addEventListener('click', (event) => {
           if (gameOver) return;
+          
+          // Cálculo de coordenadas de clic
           const rect = canvas.getBoundingClientRect();
           const scaleX = canvas.width / rect.width;
           const scaleY = canvas.height / rect.height;
@@ -561,29 +628,31 @@ function getMahjongHtml() {
           const clickY = (event.clientY - rect.top) * scaleY;
           let clickedTile = null;
           
+          // Priorizar la detección de clics en las fichas superiores (mayor Z)
           const visibleTiles = board.filter(t => !t.removed).sort((a, b) => b.z - a.z); 
 
           for (const tile of visibleTiles) {
-              const base_x = LAYOUT_START_X + tile.x * TILE_UNIT_X * TILE_SCALE;
-              const base_y = LAYOUT_START_Y + tile.y * TILE_UNIT_Y * TILE_SCALE;
+              // Recalcular la posición de dibujo para la detección
               const z_offset_x = tile.z * TILE_DEPTH_X;
               const z_offset_y = tile.z * TILE_DEPTH_Y;
-              let drawX = base_x + z_offset_x;
-              let drawY = base_y - z_offset_y;
+              let drawX = LAYOUT_START_X + tile.x * TILE_UNIT_X * TILE_SCALE + z_offset_x;
+              let drawY = LAYOUT_START_Y + tile.y * TILE_UNIT_Y * TILE_SCALE - z_offset_y;
 
               if (tile.isSelected) {
                   drawY -= 5; 
               }
               
+              // Área de detección expandida para el efecto 3D
               const detectionX = drawX;
               const detectionY = drawY - TILE_DEPTH_Y; 
               const detectionW = TILE_WIDTH + TILE_DEPTH_X;
+              // +5 extra por la elevación del seleccionado.
               const detectionH = TILE_HEIGHT + TILE_DEPTH_Y + 5; 
 
               if (clickX >= detectionX && clickX <= detectionX + detectionW &&
                   clickY >= detectionY && clickY <= detectionH + detectionY) {
                   clickedTile = tile;
-                  break;
+                  break; // Se detiene al encontrar la primera ficha visible
               }
           }
 
@@ -620,33 +689,34 @@ function getMahjongHtml() {
       function gameLoop() {
           if (gameOver) {
               clearInterval(gameInterval);
+              gameInterval = null; // Limpieza de la referencia
               gameOverScreen.style.display = 'flex';
               return;
           }
 
           ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-          // Dibujar en orden de Z (profundidad)
+          // Dibujar en orden de Z (profundidad, de menor a mayor Z)
+          // Se mantiene la ordenación original para evitar problemas de solapamiento visual
           const sortedTiles = board.filter(t => !t.removed).sort((a, b) => a.z - b.z);
           
           sortedTiles.forEach(drawTile);
 
-          checkGameOver();
+          // Mantenido al final del loop para que el contador se actualice
+          checkGameOver(); 
       }
 
       // 💥 LISTENERS 💥
       
       // Reinicio Completo
       restartButton.addEventListener('click', () => {
-          gameOver = false;
-          gameOverScreen.style.display = 'none';
+          // No es necesario modificar gameOver aquí, lo maneja initializeGame
           initializeGame(); 
       });
       
       // Barajar y Continuar
       shuffleOptionButton.addEventListener('click', () => {
-          gameOver = false; 
-          gameOverScreen.style.display = 'none';
+          // No es necesario modificar gameOver aquí, lo maneja shuffleBoardAndContinue
           shuffleBoardAndContinue(); 
       });
 
