@@ -1,6 +1,6 @@
 // Archivo principal para Scriptable - Mahjong Solitario
-// VERSIÓN FINAL: Layout Agradable (Escala 0,55) - SHUFFLE CONDICIONAL + CONTADOR DE POSIBILIDADES
-// Lógica de Cobertura de Cúspide y Bloqueo de Laterales Extremos ¡CORREGIDA!
+// VERSIÓN FINAL: Layout Moderno (Escala 0,55) - SHUFFLE CONDICIONAL + CENTRADO CORREGIDO
+// Logotipo del widget actualizado a solo una ficha de Mahjong grande.
 
 // ===================================
 // ========== CÓDIGO MAHJONG SOLITARIO ==========
@@ -19,37 +19,39 @@ async function createWidget() {
   const w = new ListWidget();
   w.backgroundColor = WIDGET_BACKGROUND_COLOR; 
 
-  // 1. Título
-  const title = w.addText("🀄 Mahjong Solitario");
-  title.textColor = Color.white();
-  title.font = Font.boldSystemFont(18);
-  title.centerAlignText();
+  // --- CAMBIO AQUÍ: Eliminamos el título y dibujamos solo la ficha grande ---
   
-  // 2. Dibujar la vista previa de la ficha
   const canvas = new DrawContext();
-  const canvasSize = new Size(300, 150);
+  // Ajustamos el tamaño del canvas para la ficha grande
+  const canvasSize = new Size(200, 200); 
   canvas.size = canvasSize;
   canvas.opaque = false;
   canvas.respectScreenScale = true;
 
-  // Fondo de la vista previa
+  // Fondo de la vista previa (opcional, para rellenar si el canvas es más grande)
   canvas.setFillColor(WIDGET_BACKGROUND_COLOR);
   canvas.fillRect(new Rect(0, 0, canvasSize.width, canvasSize.height));
 
-  // Dibujo de la ficha de muestra
-  const tileRect = new Rect(130, 50, 40, 50);
+  // Dibujo de la ficha de muestra GRANDE y CENTRADA
+  // Calculamos la posición para centrar la ficha en el canvasSize
+  const largeTileWidth = 0;
+  const largeTileHeight = 0;
+  const tileX = (canvasSize.width / 2) - (largeTileWidth / 2);
+  const tileY = (canvasSize.height / 2) - (largeTileHeight / 2);
+  const tileRect = new Rect(tileX, tileY, largeTileWidth, largeTileHeight);
   
   canvas.setFillColor(TILE_COLOR_FACE);
   canvas.fillRect(tileRect); 
   canvas.setStrokeColor(TILE_COLOR_STROKE);
-  canvas.setLineWidth(2);
+  canvas.setLineWidth(3); // Borde más grueso para el logo
   canvas.strokeRect(tileRect);
   
-  // Carácter de la ficha
+  // Carácter de la ficha (más grande)
   canvas.setLineWidth(1); 
-  canvas.setFont(Font.systemFont(30)); 
+  canvas.setFont(Font.systemFont(200)); // Fuente mucho más grande
   canvas.setTextColor(TILE_COLOR_CHAR); 
-  canvas.drawText("🀄", new Point(132, 55)); 
+  // Ajustamos la posición del carácter para que esté centrado en la ficha
+  canvas.drawText("🀄", new Point(tileX + (largeTileWidth / 2) - 105, tileY + (largeTileHeight / 2) - 120)); 
   
   const gamePreview = canvas.getImage();
   const img = w.addImage(gamePreview);
@@ -86,7 +88,7 @@ if (config.runsInWidget) {
 
 Script.complete(); // Siempre llamar a complete, incluso si se usa setWidget
 
-// --- CÓDIGO HTML/JS DEL JUEGO ---
+// --- CÓDIGO HTML/JS DEL JUEGO (sin cambios, se mantiene el último estado) ---
 
 /**
  * Genera la estructura HTML y el código JavaScript del juego.
@@ -98,49 +100,61 @@ function getMahjongHtml() {
   <!DOCTYPE html>
   <html>
   <head>
-    <meta name="viewport" content="width=device-width, initial-scale=0.55, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=0.60, user-scalable=yes">
     <title>Mahjong Solitario</title>
     <style>
+      /* --- Estilos Globales y Layout --- */
       body {
         margin: 0;
         overflow: hidden;
-        background-color: #1C3668; 
+        background-color: #0A192F; /* Azul Oscuro Marino */
         display: flex;
         flex-direction: column; 
         justify-content: center;
         align-items: center;
         height: 100vh; 
         position: relative;
-        font-family: Arial, sans-serif;
+        font-family: 'Roboto', Arial, sans-serif; /* Fuente moderna */
+        color: #ccd6f6; /* Texto claro */
       }
       canvas {
         display: block;
-        border: 2px solid #555;
-        background-color: #0A3617; /* Verde Oscuro */
+        border: 4px solid #3d5a80; /* Borde más definido */
+        background-color: #173f27; /* Verde Oscuro Profundo */
         width: 1100px; 
         height: 880px; 
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4); 
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.05); /* Sombra más pronunciada */
+        border-radius: 12px; /* Bordes redondeados */
       }
       
+      /* --- Contenedor de Interfaz (UI) --- */
       #uiContainer {
           display: flex;
-          gap: 20px;
+          gap: 30px;
           z-index: 50;
-          margin-bottom: 15px; 
-          padding: 10px 0; 
+          margin-bottom: 20px; 
+          padding: 15px 30px; 
           align-items: center; 
+          background-color: rgba(255, 255, 255, 0.05); /* Base 'Glass' */
+          backdrop-filter: blur(5px); /* Desenfoque 'Glass' */
+          border-radius: 15px; 
+          border: 1px solid rgba(255, 255, 255, 0.1); 
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
       }
+      
+      /* --- Contador de Movimientos --- */
       #moveCounter {
-          background-color: #2e4d8f;
-          color: white;
+          background-color: #3d5a80; /* Azul grisáceo vibrante */
+          color: #FFD700; /* Dorado para el contraste */
           padding: 12px 25px;
-          border-radius: 8px;
-          font-weight: bold;
-          font-size: 20px; 
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); 
+          border-radius: 10px;
+          font-weight: 900; /* Extra bold */
+          font-size: 22px; 
+          box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6), 0 4px 10px rgba(0, 0, 0, 0.4);
+          letter-spacing: 1px;
       }
 
-      /* ESTILOS DE GAME OVER */
+      /* --- Pantalla de Game Over --- */
       #gameOverScreen {
         position: absolute;
         top: 0;
@@ -151,41 +165,59 @@ function getMahjongHtml() {
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        background-color: rgba(0, 0, 0, 0.9);
+        background-color: rgba(0, 0, 0, 0.95); /* Fondo más oscuro */
         z-index: 100;
+        border-radius: 0; 
       }
       #gameOverScreen h1 {
-        color: #FFD700;
-        font-size: 40px; 
-        margin-bottom: 15px;
-        text-shadow: 3px 3px 6px #000; 
+        color: #64ffda; /* Color de acento moderno (Cian) */
+        font-size: 50px; 
+        margin-bottom: 20px;
+        text-shadow: 0 0 15px rgba(100, 255, 218, 0.7); /* Efecto neón suave */
+        font-weight: bold;
       }
       #gameOverScreen p {
-        color: white;
-        font-size: 20px;
-        margin-bottom: 40px;
+        color: #ccd6f6;
+        font-size: 24px;
+        margin-bottom: 50px;
         text-align: center;
-        max-width: 80%;
+        max-width: 90%;
       }
       #gameOverButtons {
           display: flex;
-          gap: 25px; 
+          gap: 30px; 
       }
+      
+      /* --- Estilos de Botón Moderno --- */
       #restartButton, #shuffleOptionButton { 
-        padding: 15px 30px; 
-        background-color: #D32F2F;
+        padding: 15px 35px; 
+        background-color: #D32F2F; /* Rojo principal */
         border: none;
-        border-radius: 10px; 
+        border-radius: 8px; 
         color: white;
-        font-size: 22px; 
+        font-size: 24px; 
         cursor: pointer;
         font-weight: bold;
-        transition: background-color 0.3s, transform 0.2s; 
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s; /* Transiciones añadidas */
+        box-shadow: 0 5px 15px rgba(211, 47, 47, 0.5); /* Sombra de color para el botón */
+        letter-spacing: 0.5px;
       }
-      #restartButton:hover, #shuffleOptionButton:hover {
+      
+      #shuffleOptionButton {
+          background-color: #388E3C; /* Verde para la opción de continuar */
+          box-shadow: 0 5px 15px rgba(56, 142, 60, 0.5);
+      }
+      
+      #restartButton:hover {
         background-color: #B71C1C;
-        transform: translateY(-2px); 
+        transform: translateY(-3px); 
+        box-shadow: 0 8px 20px rgba(211, 47, 47, 0.7); 
+      }
+      
+      #shuffleOptionButton:hover {
+        background-color: #2E7D32;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(56, 142, 60, 0.7); 
       }
     </style>
   </head>
@@ -230,7 +262,8 @@ function getMahjongHtml() {
       const TILE_DEPTH_Y = 3; 
       const TILE_SCALE = 1.0; 
       const TILE_RADIUS = 4; 
-      const FONT_SIZE = '45px'; 
+      // FONT_SIZE en 55px (tamaño ajustado para no desbordar)
+      const FONT_SIZE = '55px'; 
       const TILE_UNIT_X = TILE_WIDTH / 2; 
       const TILE_UNIT_Y = TILE_HEIGHT / 2; 
       
@@ -407,21 +440,23 @@ function getMahjongHtml() {
           gameOver = false;
           pairsRemoved = 0; 
           
-          // CÁLCULOS DE CENTRADO (Mantenidos)
+          // CÁLCULOS DE CENTRADO (CORREGIDO)
           const max_x = 28; 
           const max_y = 14; 
           const max_z = 4;
           
-          const centerUnitX = max_x / 2; 
-          const offsetToCenterHorizontal = centerUnitX * TILE_UNIT_X * TILE_SCALE; 
+          // Ancho y alto del layout base sin considerar la profundidad
+          const TILE_WIDTH_PIXELS = max_x * TILE_UNIT_X * TILE_SCALE; 
+          const TILE_HEIGHT_PIXELS = max_y * TILE_UNIT_Y * TILE_SCALE; 
           
-          const z_compensation_x = max_z * TILE_DEPTH_X; 
-
-          LAYOUT_START_X = (canvas.width / 2) - offsetToCenterHorizontal - z_compensation_x; 
-
-          const centerUnitY = max_y / 2; 
-          const offsetToCenterVertical = centerUnitY * TILE_UNIT_Y * TILE_SCALE;
-          LAYOUT_START_Y = (canvas.height / 2) - offsetToCenterVertical;
+          // 1. Calcular el ancho total Ocupado (incluyendo la profundidad 3D de la capa más alta)
+          const totalLayoutWidth = TILE_WIDTH_PIXELS + (max_z * TILE_DEPTH_X); 
+          
+          // 2. Calcular el inicio X: (Ancho Canvas / 2) - (Ancho Total Layout / 2)
+          LAYOUT_START_X = (canvas.width / 2) - (totalLayoutWidth / 2); 
+          
+          // 3. Calcular el inicio Y: (Alto Canvas / 2) - (Alto Total Layout / 2)
+          LAYOUT_START_Y = (canvas.height / 2) - (TILE_HEIGHT_PIXELS / 2);
 
           // Inicio de bucle y comprobación de movimientos
           updateTileFreedom(); 
@@ -525,10 +560,10 @@ function getMahjongHtml() {
           const sideColor = isSelected ? '#CCAA00' : (isFree ? '#E0E0E0' : '#B0B0B0');
           
           // --- Sombra ---
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-          ctx.shadowBlur = 5;
-          ctx.shadowOffsetX = 3;
-          ctx.shadowOffsetY = 3;
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.7)'; // Sombra más oscura
+          ctx.shadowBlur = 8; // Sombra más suave
+          ctx.shadowOffsetX = 4;
+          ctx.shadowOffsetY = 4;
 
           // --- Lados 3D (Refactorizado ligeramente para ser más claro) ---
           ctx.fillStyle = sideColor;
@@ -555,7 +590,7 @@ function getMahjongHtml() {
           
           // --- Cara principal ---
           ctx.shadowColor = 'rgba(0, 0, 0, 0)'; // Desactivar sombra para la cara principal y el texto
-          ctx.lineWidth = 2; // Ancho del borde de la cara
+          ctx.lineWidth = 3; // Borde más grueso
 
           // Relleno
           ctx.fillStyle = fillColor;
@@ -566,18 +601,19 @@ function getMahjongHtml() {
           ctx.roundRect(drawX, drawY, W, H, R).stroke();
 
 
-          // --- Carácter UNICODE ---
+          // --- Carácter UNICODE (AJUSTADO) ---
           ctx.fillStyle = map.color;
           // Uso de template literal para la fuente
           ctx.font = \`bold \${FONT_SIZE} Arial\`; 
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(map.char, drawX + W / 2, drawY + H / 2 + 5); 
+          // Centrado vertical AJUSTADO CON DESPLAZAMIENTO NEGATIVO
+          ctx.fillText(map.char, drawX + W / 2, drawY + H / 2 - 5); 
           
-          // --- Marcar Ficha Libre (Borde verde) ---
+          // --- Marcar Ficha Libre (Borde cian moderno) ---
           if(isFree) {
-              ctx.strokeStyle = '#388E3C'; 
-              ctx.lineWidth = 3;
+              ctx.strokeStyle = '#64ffda'; // Cian moderno
+              ctx.lineWidth = 4; // Borde más prominente
               ctx.roundRect(drawX, drawY, W, H, R).stroke();
           }
       }
