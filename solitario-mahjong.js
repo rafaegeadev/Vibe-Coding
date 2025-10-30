@@ -145,7 +145,7 @@
     <div id="moveCounter">Movimientos Posibles: 0</div>
   </div>
 
-      <canvas id="gameCanvas" width="1320" height="1056"></canvas>
+  <canvas id="gameCanvas" width="1100" height="880"></canvas>
   
   <div id="gameOverScreen">
     <h1 id="gameOverTitle">¡GAME OVER!</h1>
@@ -176,13 +176,13 @@
     const TOTAL_TILES = 144; 
 
     // --- CONSTANTES DEL JUEGO Y DIMENSIONES ---
-    const TILE_WIDTH = 58;
-    const TILE_HEIGHT = 86;
-    const TILE_DEPTH_X = 4; 
-    const TILE_DEPTH_Y = 4; 
+    const TILE_WIDTH = 48;
+    const TILE_HEIGHT = 72;
+    const TILE_DEPTH_X = 3; 
+    const TILE_DEPTH_Y = 3; 
     const TILE_SCALE = 1.0; 
-    const TILE_RADIUS = 5; 
-    const FONT_SIZE = '66px'; 
+    const TILE_RADIUS = 4; 
+    const FONT_SIZE = '55px'; 
     const TILE_UNIT_X = TILE_WIDTH / 2; 
     const TILE_UNIT_Y = TILE_HEIGHT / 2; 
     
